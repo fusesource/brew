@@ -37,19 +37,35 @@ public class CoffeeJadeCompiler implements Compiler {
     }
 
 	public CoffeeJadeCompiler(String options) {
+        Context context = Context.enter();
+        context.setOptimizationLevel(-1); // Without this, Rhino hits a 64K bytecode limit and fails
+        globalScope = context.initStandardObjects();
+
+        try
+        {
+            //evaluateScript(context, "r.js", "require.js");
+            evaluateScript(context, "org/fusesource/coffeejade/mock_browser.js", "mock_browser.js");
+            evaluateScript(context, "org/fusesource/coffeejade/coffeejade.js", "coffeejade.js");
+        }
+        finally
+        {
+            Context.exit();
+        }
+
+        this.options = options;
+    }
+
+    protected void evaluateScript(Context context, String uri, String sourceName)
+    {
         ClassLoader classLoader = getClass().getClassLoader();
-        InputStream inputStream = classLoader.getResourceAsStream("org/fusesource/coffeejade/coffeejade.js");
+        InputStream inputStream = classLoader.getResourceAsStream(uri);
         try {
             try {
                 Reader reader = new InputStreamReader(inputStream, "UTF-8");
                 try {
-                    Context context = Context.enter();
-                    context.setOptimizationLevel(-1); // Without this, Rhino hits a 64K bytecode limit and fails
                     try {
-                        globalScope = context.initStandardObjects();
-                        context.evaluateReader(globalScope, reader, "coffeejade.js", 0, null);
+                        context.evaluateReader(globalScope, reader, sourceName, 0, null);
                     } finally {
-                        Context.exit();
                     }
                 } finally {
                     reader.close();
@@ -62,11 +78,9 @@ public class CoffeeJadeCompiler implements Compiler {
         } catch (IOException e) {
             throw new Error(e); // This should never happen
         }
-
-        this.options = options;
     }
 
-	public String compile (String coffeeScriptSource) {
+    public String compile (String coffeeScriptSource) {
         Context context = Context.enter();
         try {
             Scriptable compileScope = context.newObject(globalScope);
