@@ -286,6 +286,9 @@
 		</profile>
 	</profiles>
 
+    <!--
+    Lets use FuseSource Nexus...
+
 	<distributionManagement>
 		<repository>
 			<uniqueVersion>false</uniqueVersion>
@@ -300,5 +303,6 @@
 			<url>https://oss.sonatype.org/content/repositories/snapshots</url>
 		</snapshotRepository>
 	</distributionManagement>
+	-->
 
 </project>
