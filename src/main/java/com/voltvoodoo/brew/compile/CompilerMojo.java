@@ -170,6 +170,16 @@ public class CompilerMojo extends AbstractMojo
                 }
             }
 
+            for ( String relativePath : getJadeRelativePaths() )
+            {
+                try {
+                    compileJadeFile(relativePath);
+                } catch(JavaScriptException e) {
+                    getLog().error( "[" + relativePath + "]: " + e.getMessage() );
+                    throw e;
+                }
+            }
+
             String[] resourcePaths = getResourceRelativePaths();
             if (resourcePaths != null && resourcePaths.length > 0)
             {
