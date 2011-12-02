@@ -47,6 +47,7 @@ public class CoffeeJadeCompiler implements Compiler {
                     context.setOptimizationLevel(-1); // Without this, Rhino hits a 64K bytecode limit and fails
                     try {
                         globalScope = context.initStandardObjects();
+                        context.evaluateString(globalScope, "var window = {};", "JCoffeeJadeCompiler", 0, null);
                         context.evaluateReader(globalScope, reader, "coffeejade.js", 0, null);
                     } finally {
                         Context.exit();
@@ -73,7 +74,7 @@ public class CoffeeJadeCompiler implements Compiler {
             compileScope.setParentScope(globalScope);
             compileScope.put("coffeeScriptSource", compileScope, coffeeScriptSource);
             try {
-                String source = String.format("CoffeeScript.compile(coffeeScriptSource, %s);", options);
+                String source = String.format("window.jade.compile(coffeeScriptSource, %s).code;", options);
                 return (String)context.evaluateString(compileScope, source, "JCoffeeJadeCompiler", 0, null);
             } catch (JavaScriptException e) {
                 throw new CoffeeScriptCompileException(e);
