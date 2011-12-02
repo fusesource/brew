@@ -7,9 +7,7 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -36,6 +34,8 @@ public class CompilerMojo extends AbstractMojo
 
     private static final String HAML_PATTERN = "**/*.haml";
 
+    private static final String JADE_PATTERN = "**/*.jade";
+
     private static final String ANY_PATTERN = "**/*";
 
     /**
@@ -48,6 +48,23 @@ public class CompilerMojo extends AbstractMojo
      */
     private File hamlOutputDir;
     
+    /**
+     * @parameter expression="${basedir}/src/main/jade"
+     */
+    private File jadeSourceDir;
+
+    /**
+     * @parameter expression="${project.build.outputDirectory}"
+     */
+    private File jadeOutputDir;
+
+    /**
+     * Options to pass the CoffeeJade compiler
+     *
+     * @parameter expression=""
+     */
+    private String coffeeJadeOptions;
+
     /**
      * @parameter expression="${project.build.outputDirectory}"
      */
@@ -111,7 +128,13 @@ public class CompilerMojo extends AbstractMojo
     private HamlCompiler hamlCompiler;
     private Optimizer moduleConverter;
     private CoffeeScriptCompiler coffeeCompiler;
+    private CoffeeJadeCompiler jadeCompiler;
     private RawCopyCompiler resourceCompiler;
+
+    /**
+     * Lets keep track of the Coffee/Haml/Jade source files so we don't copy them in the resource copy
+     */
+    private Set<String> sourceFilePaths = new HashSet<String>();
 
     public void execute() throws MojoExecutionException
     {
@@ -122,7 +145,7 @@ public class CompilerMojo extends AbstractMojo
             moduleConverter = new Optimizer();
             coffeeCompiler = new CoffeeScriptCompiler(
                     new LinkedList<CoffeeScriptOption>() );
-            resourceCompiler = new RawCopyCompiler();
+            resourceCompiler = new RawCopyCompiler(this);
 
             for ( String relativePath : getCoffeeScriptsRelativePaths() )
             {
@@ -146,19 +169,6 @@ public class CompilerMojo extends AbstractMojo
                     throw e;
                 }
             }
-
-            // TODO am guessing this is a copy/paste bug :)
-            /*
-            for ( String relativePath : getHamlRelativePaths() )
-            {
-                try {
-                    compileHamlFile( relativePath );
-                } catch(JavaScriptException e) {
-                    getLog().error( "[" + relativePath + "]: " + e.getMessage() );
-                    throw e;
-                }
-            }
-            */
 
             String[] resourcePaths = getResourceRelativePaths();
             if (resourcePaths != null && resourcePaths.length > 0)
@@ -197,6 +207,8 @@ public class CompilerMojo extends AbstractMojo
     {
         FileSetChangeMonitor hamlFiles = new FileSetChangeMonitor(
                 hamlSourceDir, HAML_PATTERN );
+        FileSetChangeMonitor jadeFiles = new FileSetChangeMonitor(
+                jadeSourceDir, JADE_PATTERN );
         FileSetChangeMonitor coffeeFiles = new FileSetChangeMonitor(
                 coffeeSourceDir, COFFEE_PATTERN );
         FileSetChangeMonitor resourceFiles = new FileSetChangeMonitor(
@@ -212,6 +224,16 @@ public class CompilerMojo extends AbstractMojo
                 {
                     try {
                         compileHamlFile( file);
+                        System.out.println("[" + file + "]: Compiled");
+                    } catch(Exception e) {
+                        getLog().error( "[" + file + "]: " + e.getMessage() );
+                    }
+                }
+
+                for ( String file : jadeFiles.getModifiedFilesSinceLastTimeIAsked() )
+                {
+                    try {
+                        compileJadeFile( file);
                         System.out.println("[" + file + "]: Compiled");
                     } catch(Exception e) {
                         getLog().error( "[" + file + "]: " + e.getMessage() );
@@ -235,7 +257,7 @@ public class CompilerMojo extends AbstractMojo
                 {
                     try
                     {
-                        RawCopyCompiler.copyFile(file, resourceSourceDir, resourceOutputDir);
+                        resourceCompiler.copyFile(file, resourceSourceDir, resourceOutputDir);
                     }
                     catch (IOException e)
                     {
@@ -246,7 +268,7 @@ public class CompilerMojo extends AbstractMojo
         }
         catch ( InterruptedException e )
         {
-            getLog().info( "Caught interrupt, quitting." );
+            getLog().info("Caught interrupt, quitting.");
         }
     }
 
@@ -255,6 +277,7 @@ public class CompilerMojo extends AbstractMojo
             IOException
     {
         File coffee = new File( coffeeSourceDir, relativePath );
+        addSourcefile(coffee);
         File js = new File( coffeeOutputDir, relativePath.substring( 0,
                 relativePath.lastIndexOf( '.' ) ) + ".js" );
 
@@ -272,6 +295,7 @@ public class CompilerMojo extends AbstractMojo
     private void compileHamlFile( String relativePath ) throws IOException
     {
         File coffee = new File( hamlSourceDir, relativePath ).getAbsoluteFile();
+        addSourcefile(coffee);
         File js = new File( hamlOutputDir, relativePath.substring( 0,
                 relativePath.lastIndexOf( '.' ) ) + ".js" ).getAbsoluteFile();
 
@@ -292,14 +316,63 @@ public class CompilerMojo extends AbstractMojo
         out.close();
     }
 
+    private void compileJadeFile( String relativePath ) throws IOException
+    {
+        if (jadeCompiler == null)
+        {
+            jadeCompiler = new CoffeeJadeCompiler(coffeeJadeOptions);
+        }
+        File coffee = new File( jadeSourceDir, relativePath ).getAbsoluteFile();
+        addSourcefile(coffee);
+        File js = new File( jadeOutputDir, relativePath.substring( 0,
+                relativePath.lastIndexOf( '.' ) ) + ".js" ).getAbsoluteFile();
+
+        if ( js.exists() )
+        {
+            js.delete();
+        }
+        js.getParentFile().mkdirs();
+        js.createNewFile();
+
+        FileInputStream in = new FileInputStream( coffee );
+        FileOutputStream out = new FileOutputStream( js );
+
+        String compiled = jadeCompiler.compile( IOUtil.toString( in ) );
+        IOUtil.copy( compiled, out );
+
+        in.close();
+        out.close();
+    }
+
+    private String toFileKey(File source)
+    {
+        return source.getAbsolutePath();
+    }
+
+    public void addSourcefile(File source)
+    {
+        sourceFilePaths.add(toFileKey(source));
+    }
+
+    /**
+     * Returns true if this is a source file we've used before (coffee, haml, jade etc)
+     */
+    public boolean isSourceFile(File source)
+    {
+        return sourceFilePaths.contains(toFileKey(source));
+    }
 
     private String[] getHamlRelativePaths() throws MojoFailureException
     {
         return getRelativePaths( hamlSourceDir, HAML_PATTERN );
     }
 
-    private String[] getCoffeeScriptsRelativePaths()
-            throws MojoFailureException
+    private String[] getJadeRelativePaths() throws MojoFailureException
+    {
+        return getRelativePaths( jadeSourceDir, JADE_PATTERN );
+    }
+
+    private String[] getCoffeeScriptsRelativePaths() throws MojoFailureException
     {
         return getRelativePaths( coffeeSourceDir, COFFEE_PATTERN );
     }

@@ -4,15 +4,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.voltvoodoo.brew.compile.*;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.codehaus.plexus.util.DirectoryScanner;
-
-import com.voltvoodoo.brew.compile.CoffeeScriptCompiler;
-import com.voltvoodoo.brew.compile.FileTreeCompiler;
-import com.voltvoodoo.brew.compile.HamlCompiler;
-import com.voltvoodoo.brew.compile.RawCopyCompiler;
 
 
 /**
@@ -66,7 +62,7 @@ public class TestMojo extends AbstractMojo {
         FileTreeCompiler compiler = new FileTreeCompiler();
         compiler.addDefinition("**/*.coffee", new CoffeeScriptCompiler());
         compiler.addDefinition("**/*.haml",   new HamlCompiler());
-        compiler.addDefinition("**/*",        new RawCopyCompiler());
+        compiler.addDefinition("**/*",        new RawCopyCompiler(new CompilerMojo()));
         
         compiler.compile(sourceDirs, outputDir);
     }
