@@ -24,8 +24,8 @@
     <plugins>
 ...
       <plugin>
-        <groupId>com.voltvoodoo</groupId>
-        <artifactId>coffeescript-maven</artifactId>
+        <groupId>org.fusesource.coffeebar</groupId>
+        <artifactId>brew</artifactId>
         <executions>
           <execution>
             <goals>

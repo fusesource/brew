@@ -1,13 +1,13 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>org.sonatype.oss</groupId>
-		<artifactId>oss-parent</artifactId>
-		<version>5</version>
-	</parent>
+      <parent>
+        <groupId>org.fusesource</groupId>
+        <artifactId>fusesource-pom</artifactId>
+        <version>1.8</version>
+      </parent>
 
-	<groupId>com.voltvoodoo</groupId>
+	<groupId>org.fusesource.coffeebar</groupId>
 	<artifactId>brew</artifactId>
 	<name>Brew</name>
 	<version>0.2.11-SNAPSHOT</version>
@@ -17,7 +17,7 @@
 	<inceptionYear>2011</inceptionYear>
 
 	<description>
-    A collection of tools to brew client side coffee apps. Includes coffeescript builder, requirejs builder and HAML compiler.
+    A collection of tools to brew client side coffee apps. Includes coffeescript builder, requirejs builder, HAML and Jade compiler.
 	</description>
 
 	<properties>
@@ -26,8 +26,8 @@
 		<maven.compiler.target>1.5</maven.compiler.target>
 		<short-name>brew</short-name>
 
-		<git.repo>git@github.com:jakewins/brew.git</git.repo>
-		<git.url>github.com/jakewins/brew</git.url>
+		<git.repo>git@github.com:fusesource/brew.git</git.repo>
+		<git.url>github.com/fusesource/brew</git.url>
 		<git.url.http>http://${git.url}</git.url.http>
 		<git.url.git>git://${git.url}</git.url.git>
 
@@ -53,14 +53,22 @@
 	</licenses>
 
 	<organization>
-		<name>Voltvoodoo</name>
-		<url>http://voltvoodoo.com/</url>
+		<name>FuseSource</name>
+		<url>http://fusesource.org/</url>
 	</organization>
 	<developers>
 		<developer>
 			<id>jakewins</id>
 			<name>Jacob Hansson</name>
 			<timezone>GMT+1</timezone>
+			<roles>
+				<role>Developer</role>
+			</roles>
+		</developer>
+		<developer>
+			<id>jstrachan</id>
+			<name>James Strachan</name>
+			<timezone>GMT</timezone>
 			<roles>
 				<role>Developer</role>
 			</roles>
@@ -138,7 +146,17 @@
 	<build>
 
 		<plugins>
-			<plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>2.3.2</version>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.target}</target>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
 				<version>2.2</version>
