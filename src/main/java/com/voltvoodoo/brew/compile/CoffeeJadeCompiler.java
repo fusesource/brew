@@ -103,19 +103,23 @@ public class CoffeeJadeCompiler implements Compiler
                 {
                     String jadeSource = entry.getKey();
                     String js = entry.getValue();
-                    // lets lose the first line...
-                    int i = js.indexOf('\n');
-                    js = js.substring(i + 1);
-                    // TODO lets replace the oddly generated with statements
-                    // not quite sure why we need this :)
-                    js = js.replace("`with (locals || {}) {`", "with (locals || {}) {;");
-                    js = js.replace("`}`", "};");
-
+                    // lets lose the first line
+                    int idx = js.indexOf('\n');
+                    if (idx > 0)
+                    {
+                        js = js.substring(idx + 1);
+                    }
+                    // lets lose the last line to avoid the .call()...
+                    for (int i = 0; i < 2; i++)
+                    {
+                        idx = js.lastIndexOf('\n');
+                        if (idx > 0)
+                        {
+                            js = js.substring(0, idx);
+                        }
+                    }
                     // lets put the template into a map
-                    out.println("  templates['" + jadeSource + "'] = (function(locals) {");
-                    out.println("  var __;");
-                    out.println(js);
-                    out.println("  });");
+                    out.println("  templates['" + jadeSource + "'] = " + js);
                 }
                 out.println("  return templates;");
                 out.println("});");
