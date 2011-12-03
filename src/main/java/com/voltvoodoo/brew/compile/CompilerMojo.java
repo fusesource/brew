@@ -59,6 +59,13 @@ public class CompilerMojo extends AbstractMojo
     private File jadeOutputDir;
 
     /**
+     * The single JS file containing all the Jade templates in a map
+     *
+     * @parameter
+     */
+    private File viewsMapOutputFile;
+
+    /**
      * Options to pass the CoffeeJade compiler
      *
      * @parameter expression="{}"
@@ -179,6 +186,7 @@ public class CompilerMojo extends AbstractMojo
                     throw e;
                 }
             }
+            writeSingleViewFile();
 
             String[] resourcePaths = getResourceRelativePaths();
             if (resourcePaths != null && resourcePaths.length > 0)
@@ -212,6 +220,18 @@ public class CompilerMojo extends AbstractMojo
         }
     }
 
+    protected void writeSingleViewFile()
+    {
+        if (jadeCompiler != null) {
+            jadeCompiler.writeSingleViewFile();
+        }
+    }
+
+    public File getViewsMapOutputFile()
+    {
+        return viewsMapOutputFile;
+    }
+
     private void checkForChangesEvery( long ms ) throws FileNotFoundException,
             CoffeeScriptCompileException, IOException
     {
@@ -240,14 +260,20 @@ public class CompilerMojo extends AbstractMojo
                     }
                 }
 
+                boolean jadeChanged = false;
                 for ( String file : jadeFiles.getModifiedFilesSinceLastTimeIAsked() )
                 {
                     try {
-                        compileJadeFile( file);
+                        compileJadeFile(file);
+                        jadeChanged = true;
                         System.out.println("[" + file + "]: Compiled");
                     } catch(Exception e) {
                         getLog().error( "[" + file + "]: " + e.getMessage() );
                     }
+                }
+                if (jadeChanged)
+                {
+                    writeSingleViewFile();
                 }
 
                 for ( String file : coffeeFiles.getModifiedFilesSinceLastTimeIAsked() )
@@ -330,10 +356,10 @@ public class CompilerMojo extends AbstractMojo
     {
         if (jadeCompiler == null)
         {
-            jadeCompiler = new CoffeeJadeCompiler(coffeeJadeOptions);
+            jadeCompiler = new CoffeeJadeCompiler(this, coffeeJadeOptions);
         }
-        File coffee = new File( jadeSourceDir, relativePath ).getAbsoluteFile();
-        addSourcefile(coffee);
+        File jade = new File( jadeSourceDir, relativePath ).getAbsoluteFile();
+        addSourcefile(jade);
         File js = new File( jadeOutputDir, relativePath.substring( 0,
                 relativePath.lastIndexOf( '.' ) ) + ".js" ).getAbsoluteFile();
 
@@ -344,10 +370,10 @@ public class CompilerMojo extends AbstractMojo
         js.getParentFile().mkdirs();
         js.createNewFile();
 
-        FileInputStream in = new FileInputStream( coffee );
+        FileInputStream in = new FileInputStream( jade );
         FileOutputStream out = new FileOutputStream( js );
 
-        String compiled = jadeCompiler.compile( IOUtil.toString( in ) );
+        String compiled = jadeCompiler.compile( IOUtil.toString( in ), relativePath );
         IOUtil.copy( compiled, out );
 
         in.close();
