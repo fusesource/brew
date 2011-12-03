@@ -35,11 +35,13 @@ public class CoffeeJadeCompiler implements Compiler
     private final String options;
     private File singleViewFile;
     private Map<String, String> viewCache = new HashMap<String, String>();
+    private CoffeeScriptCompiler coffeeCompiler;
 
     public CoffeeJadeCompiler(CompilerMojo mojo, String options)
     {
         this.mojo = mojo;
         this.singleViewFile = mojo.getViewsMapOutputFile();
+        this.coffeeCompiler = mojo.getCoffeeCompiler();
         ClassLoader classLoader = getClass().getClassLoader();
         InputStream inputStream = classLoader.getResourceAsStream("org/fusesource/coffeejade/coffeejade.js");
         try
@@ -150,7 +152,10 @@ public class CoffeeJadeCompiler implements Compiler
             try
             {
                 String source = String.format("window.jade.compile(jadeSource, %s).code;", options);
-                String js = (String) context.evaluateString(compileScope, source, "JCoffeeJadeCompiler", 0, null);
+                String coffee = (String) context.evaluateString(compileScope, source, "JCoffeeJadeCompiler", 0, null);
+
+                // now lets convert coffee to js
+                String js = coffeeCompiler.compile(coffee);
                 cacheResult(relativePath, js);
                 return js;
             }

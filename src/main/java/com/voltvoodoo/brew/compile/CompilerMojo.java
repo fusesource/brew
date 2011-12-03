@@ -150,8 +150,6 @@ public class CompilerMojo extends AbstractMojo
 
             hamlCompiler = new HamlCompiler();
             moduleConverter = new Optimizer();
-            coffeeCompiler = new CoffeeScriptCompiler(
-                    new LinkedList<CoffeeScriptOption>() );
             resourceCompiler = new RawCopyCompiler(this);
 
             for ( String relativePath : getCoffeeScriptsRelativePaths() )
@@ -218,6 +216,16 @@ public class CompilerMojo extends AbstractMojo
         {
             throw new MojoExecutionException( exc.getMessage(), exc );
         }
+    }
+
+    public CoffeeScriptCompiler getCoffeeCompiler()
+    {
+        if (coffeeCompiler == null)
+        {
+            coffeeCompiler = new CoffeeScriptCompiler(
+                    new LinkedList<CoffeeScriptOption>() );
+        }
+        return coffeeCompiler;
     }
 
     protected void writeSingleViewFile()
@@ -317,7 +325,7 @@ public class CompilerMojo extends AbstractMojo
         File js = new File( coffeeOutputDir, relativePath.substring( 0,
                 relativePath.lastIndexOf( '.' ) ) + ".js" );
 
-        coffeeCompiler.compile( coffee, js );
+        getCoffeeCompiler().compile( coffee, js );
     }
 
     private void convertFromCommonModuleToAMD( String relativePath ) throws IOException {
