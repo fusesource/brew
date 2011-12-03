@@ -61,7 +61,7 @@ public class CompilerMojo extends AbstractMojo
     /**
      * Options to pass the CoffeeJade compiler
      *
-     * @parameter expression=""
+     * @parameter expression="{}"
      */
     private String coffeeJadeOptions;
 

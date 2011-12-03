@@ -37,35 +37,20 @@ public class CoffeeJadeCompiler implements Compiler {
     }
 
 	public CoffeeJadeCompiler(String options) {
-        Context context = Context.enter();
-        context.setOptimizationLevel(-1); // Without this, Rhino hits a 64K bytecode limit and fails
-        globalScope = context.initStandardObjects();
-
-        try
-        {
-            //evaluateScript(context, "r.js", "require.js");
-            evaluateScript(context, "org/fusesource/coffeejade/mock_browser.js", "mock_browser.js");
-            evaluateScript(context, "org/fusesource/coffeejade/coffeejade.js", "coffeejade.js");
-        }
-        finally
-        {
-            Context.exit();
-        }
-
-        this.options = options;
-    }
-
-    protected void evaluateScript(Context context, String uri, String sourceName)
-    {
         ClassLoader classLoader = getClass().getClassLoader();
-        InputStream inputStream = classLoader.getResourceAsStream(uri);
+        InputStream inputStream = classLoader.getResourceAsStream("org/fusesource/coffeejade/coffeejade.js");
         try {
             try {
                 Reader reader = new InputStreamReader(inputStream, "UTF-8");
                 try {
+                    Context context = Context.enter();
+                    context.setOptimizationLevel(-1); // Without this, Rhino hits a 64K bytecode limit and fails
                     try {
-                        context.evaluateReader(globalScope, reader, sourceName, 0, null);
+                        globalScope = context.initStandardObjects();
+                        context.evaluateString(globalScope, "var window = {};", "JCoffeeJadeCompiler", 0, null);
+                        context.evaluateReader(globalScope, reader, "coffeejade.js", 0, null);
                     } finally {
+                        Context.exit();
                     }
                 } finally {
                     reader.close();
@@ -78,16 +63,18 @@ public class CoffeeJadeCompiler implements Compiler {
         } catch (IOException e) {
             throw new Error(e); // This should never happen
         }
+
+        this.options = options;
     }
 
-    public String compile (String coffeeScriptSource) {
+	public String compile(String jadeSource) {
         Context context = Context.enter();
         try {
             Scriptable compileScope = context.newObject(globalScope);
             compileScope.setParentScope(globalScope);
-            compileScope.put("coffeeScriptSource", compileScope, coffeeScriptSource);
+            compileScope.put("jadeSource", compileScope, jadeSource);
             try {
-                String source = String.format("CoffeeScript.compile(coffeeScriptSource, %s);", options);
+                String source = String.format("window.jade.compile(jadeSource, %s).code;", options);
                 return (String)context.evaluateString(compileScope, source, "JCoffeeJadeCompiler", 0, null);
             } catch (JavaScriptException e) {
                 throw new CoffeeScriptCompileException(e);
