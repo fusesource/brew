@@ -104,7 +104,14 @@ public class CoffeeJadeCompiler implements Compiler
                     // lets lose the first line...
                     int i = js.indexOf('\n');
                     js = js.substring(i + 1);
+                    // TODO lets replace the oddly generated with statements
+                    // not quite sure why we need this :)
+                    js = js.replace("`with (locals || {}) {`", "with (locals || {}) {;");
+                    js = js.replace("`}`", "};");
+
+                    // lets put the template into a map
                     out.println("  templates['" + jadeSource + "'] = (function(locals) {");
+                    out.println("  var __;");
                     out.println(js);
                     out.println("  });");
                 }
