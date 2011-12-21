@@ -10,7 +10,7 @@
 	<groupId>org.fusesource.coffeebar</groupId>
 	<artifactId>brew</artifactId>
 	<name>Brew</name>
-	<version>0.2.11-SNAPSHOT</version>
+	<version>0.2.11</version>
 	<packaging>maven-plugin</packaging>
 
 	<url>http://github.com/jakewins/brew</url>
