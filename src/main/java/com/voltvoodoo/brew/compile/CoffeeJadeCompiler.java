@@ -190,6 +190,11 @@ public class CoffeeJadeCompiler implements Compiler
 
     public void compile(File source, File target) throws CoffeeScriptCompileException, IOException
     {
+        if(target.lastModified() == source.lastModified())
+        {
+            return;
+        }
+
         if (target.exists())
         {
             target.delete();
@@ -205,6 +210,8 @@ public class CoffeeJadeCompiler implements Compiler
 
         in.close();
         out.close();
+
+        target.setLastModified(source.lastModified());
     }
 
     public void compile(List<String> files, File sourceDir, File targetDir)
