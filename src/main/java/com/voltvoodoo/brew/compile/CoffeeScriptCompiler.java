@@ -92,9 +92,12 @@ public class CoffeeScriptCompiler implements Compiler {
     }
 
     public void compile (File source, File target) throws CoffeeScriptCompileException, IOException {
-        
-        if ( target.exists() )
-        {
+
+        if(target.lastModified() == source.lastModified()){
+            return;
+        }
+
+        if ( target.exists() ) {
             target.delete();
         }
         target.getParentFile().mkdirs();
@@ -108,6 +111,7 @@ public class CoffeeScriptCompiler implements Compiler {
 
         in.close();
         out.close();
+        target.setLastModified(source.lastModified());
     }
 
     public void compile(List<String> files, File sourceDir, File targetDir) {
